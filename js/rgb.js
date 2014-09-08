@@ -112,6 +112,7 @@
         grid.appendChild(table);
         this.resize();
         window.onresize = this.resize;
+        this.showMessage("You Lose")
     };
 
     Grid.prototype.run = function () {
