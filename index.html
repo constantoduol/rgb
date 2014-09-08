@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <meta charset="utf-8">
+      <title>RGB</title>
+      <link rel='shortcut icon' type='image/x-icon' href='img/splash1.png'/> 
+      <meta name="apple-mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-status-bar-style" content="black">
+      <meta name="HandheldFriendly" content="True">
+       <meta name="MobileOptimized" content="320">
+       <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0, maximum-scale=1, user-scalable=no, minimal-ui">
+       <meta name="format-detection" content="telephone=no" />
+      <meta name="description" content="color combining game"/>
+      
+      <meta name="og:title" content="RGB Color game">
+  	  <meta name="og:site_name" content="RGB All Cyan">
+  	  <meta name="og:description" content="Add the colors and fill the grid with cyan colored tiles">
+      <meta name="og:image" content="http://quest-cloud.appspot.com/games/rgb/splash.png">
+      
+       <link href="css/bootstrap.min.css" rel="stylesheet" />
+      <link href="css/rgb.css" rel="stylesheet">
+    <script src="js/jquery-2.1.1.min.js"></script>
+    <script src="js/bootstrap-modal.js"></script>
+   
+	</head>
+<body>
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&appId=624532337625612&version=v2.0";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+  <div id="scores" style="margin-top : 40px">
+        <span  class="score" style="margin-right : 40px">
+            <span>Score</span>
+            <span id="current-score">0</span>
+        </span>
+        <span class="score">
+            <span>Best</span>
+            <span id="best-score">0</span>
+        </span>
+    </div>
+    <br>
+    <br>
+    <div id="core-instr">
+     Fill the grid with <font color="cyan">15 cyan</font> tiles
+     <a href="#"  id="help-link" title="help" style="background:lightblue;padding:10px;border-radius:3px;cursor:pointer">
+       <img src="img/help.png" width="25" height="25"/>
+     </a>
+ 
+     <a href="#"  id="replay-link" title="Restart Game" style="background:lightblue;padding:10px;border-radius:3px;cursor:pointer;margin-left : 5px;">
+       <img src="img/replay.png" width="25" height="25"/>
+     </a>
+    </div>
+    
+  
+    <div id ="grid">
+    </div>
+    <div id="game-message">
+       <div id="message"><span id="win-or-lose"></span><br><br>
+       <a href="#" id="message-link" class="message-link">Play Again</a>
+     </div>
+       
+    </div>
+    <div id="below-grid">
+       Created by Constant Oduol inspired by <a href ="http://gabrielecirulli.com/">Gabriele Cirulli's</a> 2048
+       <br>
+       <br>
+       <a href="https://twitter.com/share" class="twitter-share-button" data-via="twitterapi" data-lang="en">Tweet</a>
+       <div class='fb-like' data-href="constantoduol.github.io/rgb"  data-layout=button_count data-action=like data-show-faces=true data-share=true></div>
+    </div>
+     <div id="instr">
+         <table class="table table-bordered">
+           <tr>
+            <th>Primary/Forward</th>
+            <th>Secondary/Reverse</th>
+         </tr>
+        <tr>
+         <td>
+          <p>
+            <span class="colortile" style="background: red">red</span> +  <span class="colortile" style="background: blue">blue</span> = 
+            <span class="colortile" style="background: magenta">magenta</span><br><br>
+            <span class="colortile" style="background: blue">blue</span> +  <span class="colortile" style="background: green">green</span> = 
+            <span class="colortile" style="background: cyan">cyan</span><br><br>
+            <span class="colortile" style="background: red">red</span> +  <span class="colortile" style="background: green">green</span> = 
+            <span class="colortile" style="background: yellow">yellow</span>
+        </p>
+      </td>
+      <td>
+          <p>
+            <span class="colortile" style="background: magenta">magenta</span> +  <span class="colortile" style="background: yellow">yellow</span> = 
+            <span class="colortile" style="background: red">red</span><br><br>
+            <span class="colortile" style="background: yellow">yellow</span> +  <span class="colortile" style="background: cyan">cyan</span> = 
+            <span class="colortile" style="background: green">green</span><br><br>
+            <span class="colortile" style="background: cyan">cyan</span> +  <span class="colortile" style="background: magenta">magenta</span> = 
+            <span class="colortile" style="background: blue">blue</span>
+        </p>
+      </td>
+      </tr>
+    </table>
+    </div>
+    <script type="text/javascript" src="js/rgb.js"></script>
+    <script type="text/javascript" src="js/keyboard_input_manager.js"></script>
+    <script type="text/javascript">
+    function init() {
+        setup();
+        var grid = new Grid();
+        window.grid = grid;
+        grid.init();
+        grid.run();
+    }
+    
+    function setup(){
+    	   document.getElementById("game-message").style.display = "none";
+           var bestScore = window.localStorage.getItem("best-score");
+           if (bestScore) {
+               bestScore = parseInt(bestScore)
+           }
+           else {
+               bestScore = 0;
+           }
+           document.getElementById("best-score").innerText = bestScore;
+           document.getElementById("current-score").innerText = "0";
+           document.getElementById("message-link").addEventListener("click", restart, false);
+           document.getElementById("replay-link").addEventListener("click",restart, false);
+           document.getElementById("help-link").addEventListener("click", showHelp, false);	
+    }
+    
+    function restart (){
+      window.grid.grid =  
+    	  [[null, null, null, null],
+    	   [null, null, null, null],
+    	   [null, null, null, null],
+    	   [null, null, null, null]];	
+      setup();
+      window.grid.move(1);
+      window.grid.nextTile();
+      window.grid.nextTile();
+    }
+    
+       init();
+     </script>
+     <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</body>
+</html>
