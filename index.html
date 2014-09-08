@@ -12,6 +12,12 @@
        <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0, maximum-scale=1, user-scalable=no, minimal-ui">
        <meta name="format-detection" content="telephone=no" />
       <meta name="description" content="color combining game"/>
+      
+      <meta name="og:title" content="RGB Color game">
+  	  <meta name="og:site_name" content="RGB All Cyan">
+  	  <meta name="og:description" content="Add the colors and fill the grid with cyan colored tiles">
+      <meta name="og:image" content="http://quest-cloud.appspot.com/games/rgb/splash.png">
+      
        <link href="css/bootstrap.min.css" rel="stylesheet" />
       <link href="css/rgb.css" rel="stylesheet">
     <script src="js/jquery-2.1.1.min.js"></script>
@@ -19,6 +25,14 @@
    
 	</head>
 <body>
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&appId=624532337625612&version=v2.0";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
   <div id="scores" style="margin-top : 40px">
         <span  class="score" style="margin-right : 40px">
             <span>Score</span>
@@ -53,7 +67,10 @@
     </div>
     <div id="below-grid">
        Created by Constant Oduol inspired by <a href ="http://gabrielecirulli.com/">Gabriele Cirulli's</a> 2048
-       
+       <br>
+       <br>
+       <a href="https://twitter.com/share" class="twitter-share-button" data-via="twitterapi" data-lang="en">Tweet</a>
+       <div class='fb-like' data-href="constantoduol.github.io/rgb"  data-layout=button_count data-action=like data-show-faces=true data-share=true></div>
     </div>
      <div id="instr">
          <table class="table table-bordered">
@@ -126,5 +143,6 @@
     
        init();
      </script>
+     <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
 </body>
 </html>
