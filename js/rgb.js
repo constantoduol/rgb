@@ -93,6 +93,7 @@
 
     Grid.prototype.init = function () {
         var grid = document.getElementById("grid");
+        window.grid.motion = true;
         grid.innerHTML = "";
         var table = document.createElement("table");
         table.setAttribute("id","grid-table");
@@ -112,7 +113,7 @@
         grid.appendChild(table);
         this.resize();
         window.onresize = this.resize;
-        this.showMessage("You Lose")
+        
     };
 
     Grid.prototype.run = function () {
@@ -552,6 +553,7 @@
         document.getElementById("win-or-lose").innerHTML = msg;
         var gmsg = document.getElementById("game-message");
         this.addClass(gmsg, "message-anim");
+        window.grid.motion = false;
         gmsg.style.display = "block";
         this.runLater(1000, function () {
             window.grid.removeClass(gmsg, "message-anim");

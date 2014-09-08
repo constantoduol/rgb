@@ -59,7 +59,7 @@ KeyboardInputManager.prototype.listen = function () {
     if (self.targetIsInput(event)) return;
 
     if (!modifiers) {
-      if (mapped !== undefined) {
+      if (mapped !== undefined && window.grid.motion) {
         event.preventDefault();
         if(mapped === 0){
            window.grid.move(1);
@@ -128,7 +128,7 @@ KeyboardInputManager.prototype.listen = function () {
     var dy = touchEndClientY - touchStartClientY;
     var absDy = Math.abs(dy);
 
-    if (Math.max(absDx, absDy) > 10) {
+    if (window.grid.motion && Math.max(absDx, absDy) > 10) {
       // (right : left) : (down : up)
       var move = absDx > absDy ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
       if(move === 0){
