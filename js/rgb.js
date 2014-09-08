@@ -342,7 +342,7 @@
             this.showMessage("You Win!");
             return;
         }
-        else if (emptyTiles.length === 1) {
+        else if (emptyTiles.length === 0) {
         	console.log("you lose");
             this.showMessage("Game Over!");
             return;
