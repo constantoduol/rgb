@@ -88,7 +88,30 @@
                      #below-grid {
                        font-weight : bold;
                        margin-left: 20px;
+                       
                      }
+                     
+                     #below-grid  > form {
+                       display: inline-block;
+                       vertical-align: middle;
+                     }
+                     
+                     .donate {
+                       padding : 10px;
+                       background : lightblue;
+                       color : white;
+                       text-decoration : none;
+                       border-radius : 5px;
+                       font-size : 14px;
+                       margin : 10px;
+                     }
+                     .donate:hover {
+                     	text-decoration : none;
+                     	background : lightgray;
+                     	color : black;
+                     }
+                     
+                     
                      
                      .message-anim {
                      	 display : block;
