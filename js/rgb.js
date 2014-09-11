@@ -117,8 +117,26 @@
     };
 
     Grid.prototype.run = function () {
-        this.nextTile();
-        this.nextTile();
+    	var storedGrid = window.localStorage.getItem("the-grid");
+    	if(storedGrid){
+    	   this.grid = JSON.parse(storedGrid);
+    	   for(var y = 0; y < 4; y++){
+    		   for(var x = 0; x < 4; x++){
+    			   var tile = this.grid[x][y];
+    			   if (tile) {
+        			   this.setColor(tile.value, tile.row, tile.col, tile.state);
+        		   }
+        		   else {
+        			   //set all other tiles to light gray
+        			   this.setColor("lightgray", x, y, "motion");
+        		   } 
+    		   }
+    	   }
+    	}
+    	else {
+    		this.nextTile();
+    		this.nextTile();
+    	}
         new KeyboardInputManager();
     };
 
@@ -361,6 +379,7 @@
                 document.getElementById("current-score").innerHTML = bestScore;
             }
             window.localStorage.setItem("best-score", bestScore);
+            window.localStorage.setItem("the-grid",JSON.stringify(this.grid));
         }
     };
 

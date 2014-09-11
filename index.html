@@ -132,19 +132,19 @@
     }
     
     function setup(){
-    	   document.getElementById("game-message").style.display = "none";
-           var bestScore = window.localStorage.getItem("best-score");
-           if (bestScore) {
-               bestScore = parseInt(bestScore)
-           }
-           else {
-               bestScore = 0;
-           }
-           document.getElementById("best-score").innerText = bestScore;
-           document.getElementById("current-score").innerText = "0";
-           document.getElementById("message-link").addEventListener("click", restart, false);
-           document.getElementById("replay-link").addEventListener("click",restart, false);
-           document.getElementById("help-link").addEventListener("click", showHelp, false);	
+    	document.getElementById("game-message").style.display = "none";
+    	var bestScore = window.localStorage.getItem("best-score");
+    	if (bestScore) {
+    		bestScore = parseInt(bestScore)
+        }
+    	else {
+    		bestScore = 0;
+        }
+    	document.getElementById("best-score").innerText = bestScore;
+    	document.getElementById("current-score").innerText = "0";
+    	document.getElementById("message-link").addEventListener("click", restart, false);
+    	document.getElementById("replay-link").addEventListener("click",restart, false);
+    	document.getElementById("help-link").addEventListener("click", showHelp, false);	
     }
     
     function restart (){
