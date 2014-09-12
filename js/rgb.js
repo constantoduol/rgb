@@ -368,7 +368,7 @@
             return;
         }
         if (moved) {
-            var score = (cyanTiles.length / 16) * 160;
+            var score = Math.floor(Math.pow((cyanTiles.length/2),2)*20);
             var currentScore = document.getElementById("current-score").innerHTML;
             var bestScore = document.getElementById("best-score").innerHTML;
             currentScore = parseInt(currentScore) + parseInt(score);
