@@ -1,78 +1,3 @@
-
-
-    function showHelp() {
-        var window = document.getElementById("alert-window");
-        if (!window) {
-            var html = "<div class='modal' id='alert-window' style='background : #F0FFFF'>" +
-            "<div class='modal-dialog'>" +
-            "<div class='modal-content'>" +
-            "<div class='modal-header'>" +
-            "<h4 class='modal-title' id='modal-title'></h4>" +
-            "</div>" +
-            "<div class='modal-body' id='modal-content'>" +
-            "</div>" +
-            "<div class='modal-footer'>" +
-            "<button type='button' class='btn btn-default' data-dismiss='modal' id='cancel_func'>Ok</button>" +
-
-            "</div>" +
-            "</div><!-- /.modal-content -->" +
-            "</div><!-- /.modal-dialog -->" +
-            "</div><!-- /.modal -->";
-            $("body").append(html);
-        }
-       
-        $("#modal-title").html("Colors combine as shown below, use the arrow keys or swipe(touchscreen) to navigate and fill the grid with 15 cyan colored tiles");
-        var html = $("#instr").html();
-        $("#modal-content").html(html);
-        $("#alert-window").modal();
-
-    }
-
-    function showPopup(title,msg) {
-        var window = document.getElementById("alert-window");
-        if (!window) {
-            var html = "<div class='modal' id='alert-window' style='background : #F0FFFF'>" +
-            "<div class='modal-dialog'>" +
-            "<div class='modal-content'>" +
-            "<div class='modal-header'>" +
-            "<h4 class='modal-title' id='modal-title'></h4>" +
-            "</div>" +
-            "<div class='modal-body' id='modal-content'>" +
-            "</div>" +
-            "<div class='modal-footer'>" +
-            "<button type='button' class='btn btn-default' data-dismiss='modal' id='cancel_func'>Ok</button>" +
-
-            "</div>" +
-            "</div><!-- /.modal-content -->" +
-            "</div><!-- /.modal-dialog -->" +
-            "</div><!-- /.modal -->";
-            $("body").append(html);
-        }
-
-        $("#modal-title").html(title);
-        $("#modal-content").html(msg);
-        $("#alert-window").modal();
-    }
-
-
-    function shareToTimeline(message) {
-        FB.ui({
-            method: 'feed',
-            name: 'RGB Color game',
-            link: "https://quest-cloud.appspot.com/games/rgb/",
-            picture: 'https://quest-cloud.appspot.com/games/rgb/img/splash.png',
-            description: message
-        },
-                  function (response) {
-                      if (response && response.post_id) {
-                          showPopup("Success", "Post was published to your facebook timeline successfully");
-                      } else {
-                          showPopup("Error", "Whoops an error occurred! post was not shared to your facebook timeline");
-                      }
-                  });
-    }
-
-
     function Grid() {
         this.grid = [[null, null, null, null],
             [null, null, null, null],
@@ -80,22 +5,29 @@
             [null, null, null, null]];
         this.nextList = ["red", "green", "blue"];
         this.direction = { up: 1, down: 2, right: 3, left: 4 }; // 1 = up, 2 = down, 3 = left to right, 4 = right to left
+        var width = this.getDim()[0];
+        this.cellWidth = (600)/6; // border-spacing = 8px * 4, grid border = 5px * 2, body padding = 10px *2 = 70px
+        this.cyanTiles = [];
+        this.previousTilesLength = 0;
     }
 
-    function Tile(value, row, col, state) {
+    function Tile(value, row, col, state,meta) {
         this.value = value; // red,green,blue,cyan,magenta,yellow
         this.row = row;
         this.col = col;
         this.state = state; //merged or new
+        this.meta = meta; //any more info about the tile
     }
     
 
 
-    Grid.prototype.init = function () {
+     Grid.prototype.init = function () {
         var grid = document.getElementById("grid");
+        window.grid.motion = true;
         grid.innerHTML = "";
         var table = document.createElement("table");
         table.setAttribute("id","grid-table");
+        table.setAttribute("style","background : rgba(169, 169, 169, 0.6);margin-bottom:0px;height:100%;width:100%");
         for (var x = 0; x < 4; x++) {
             var rowId = "row-" + x;
             var row = document.createElement("tr");
@@ -105,31 +37,48 @@
                 var cell = document.createElement("td");
                 cell.setAttribute("class", "cell");
                 cell.setAttribute("id", cellId);
+                cell.setAttribute("style", "width : " + this.cellWidth + "px;height : "+this.cellWidth+"px;");
                 row.appendChild(cell);
             }
             table.appendChild(row);
         }
-        grid.appendChild(table);
-        this.resize();
-        window.onresize = this.resize;
+        grid.appendChild(table); 
     };
 
     Grid.prototype.run = function () {
-        this.nextTile();
-        this.nextTile();
+        var storedGrid = localStorage.getItem("the-grid");
+        var currentScore = localStorage.getItem("current-score");
+        if(!storedGrid || storedGrid === "null"){
+            this.nextTile();
+            this.nextTile();
+    	}
+    	else {
+            this.grid = JSON.parse(storedGrid);
+            if (currentScore) {
+                $("#current-score").html(currentScore);
+            }
+            for (var y = 0; y < 4; y++) {
+                for (var x = 0; x < 4; x++) {
+                    var tile = this.grid[x][y];
+                    if (tile) {
+                        this.actuate(tile.value, tile.row, tile.col, "new");
+                        if (tile.value === "cyan") {
+                            this.cyanTiles.push(tile);
+                        }
+                    }
+                }
+            }
+    	}
         new KeyboardInputManager();
     };
 
 
 
 
-
-
     Grid.prototype.addColors = function (color1, color2) {
-        if ((color1 === "cyan" && color2 === "cyan") || (color1 === "cyan" && color2 === "cyan")) {
-            return undefined
+        if ((color1 === color2 && color1 === "cyan") ) {
+            return undefined;
         }
-
         else if (color1 === color2) {
             return color1;
         }
@@ -165,9 +114,19 @@
                     var newValue = this.addColors(currentTile.value, nextTile.value);
                     if (!newValue)
                         continue;
-                    arr[next] = new Tile(newValue, nextTile.row, nextTile.col, "merged");
+                    //at this point the two tiles currentTile and nextTile were merged
+                    var mergedFrom = [currentTile,nextTile];
+                    arr[next] = new Tile(newValue, nextTile.row, nextTile.col, "merged",mergedFrom);
                     arr[x] = null;
                     x++;
+                    if(newValue === "cyan"){
+                       if((this.cyanTiles.length +1) > this.previousTilesLength){
+                         var score = Math.floor(Math.pow(( (this.cyanTiles.length + 1) / 2),4)) * 20; 
+                         this.addScore(score); 
+                         this.previousTilesLength = this.cyanTiles.length + 1;
+                       }
+                       
+                    }
                 }
             }
         }
@@ -180,9 +139,19 @@
                     var newValue = this.addColors(currentTile.value, nextTile.value);
                     if (!newValue)
                         continue;
-                    arr[next] = new Tile(newValue, nextTile.row, nextTile.col, "merged");
+                     //at this point the two tiles currentTile and nextTile were merged
+                    var mergedFrom = [currentTile,nextTile];
+                    arr[next] = new Tile(newValue, nextTile.row, nextTile.col, "merged",mergedFrom);
                     arr[x] = null;
                     x--;
+                    if(newValue === "cyan"){
+                       if( (this.cyanTiles.length + 1) > this.previousTilesLength){
+                         var score = Math.floor(Math.pow(( (this.cyanTiles.length + 1) / 2),4)) * 20; 
+                         this.addScore(score); 
+                         this.previousTilesLength = this.cyanTiles.length + 1;
+                       }
+                       
+                    }
                 }
             }
         }
@@ -204,18 +173,19 @@
                 if (similar === false)
                     moved = true;
                 this.grid[x] = percolated;
-                for (var y = 0; y < percolated.length; y++) {
+                //console.log(percolated);
+                for (var y = 0; y < 4; y++) {
                     //actuate the array i.e set the colors of the tiles
                     var tile = percolated[y];
                     if (tile) {
+                        var oldRow = tile.row;
+                        var oldCol = tile.col;
                         tile.col = y; // the column has changes since we are moving left or right
-                        this.setColor(tile.value, tile.row, tile.col, tile.state);
-                    }
-                    else {
-                        //set all other tiles to light gray
-                        this.setColor("lightgray", x, y, "motion");
+                        var translate = {value : tile.value, direction : "left",current_row : tile.row,current_col:tile.col,previous_row : oldRow ,previous_col : oldCol, dx : (tile.col - oldCol)*(this.cellWidth+8)};//plus 8 due to table border-spacing
+                        this.actuate(tile.value, tile.row, tile.col, tile.state,translate);
                     }
                 }
+                
             }
         }
         else {
@@ -231,97 +201,173 @@
                 var similar = this.compare(percolated, temp); //if there was any motion, these two wont be the same
                 if (similar === false)
                     moved = true;
-
+                
                 for (var x = 0; x < 4; x++) {
                     var tile = percolated[x];
                     this.grid[x][y] = tile;
                     if (tile) {
+                        var oldRow = tile.row;
+                        var oldCol = tile.col;
                         tile.row = x; //the tile has been moved to another row so change it
-                        this.setColor(tile.value, tile.row, tile.col, tile.state); //actuate the array i.e set the colors of the tiles
-                    }
-                    else {
-                        //set all other tiles to lightgray
-                        this.setColor("lightgray", x, y, "motion");
+                        var translate = {value: tile.value,direction : "top",current_row : tile.row,current_col:tile.col,previous_row : oldRow ,previous_col : oldCol, dy : (tile.row - oldRow)*(this.cellWidth+8)};//plus 8 due to table border-spacing
+                        this.actuate(tile.value, tile.row, tile.col, tile.state,translate); //actuate the array i.e set the colors of the tiles
                     }
                 }
             }
         }
-        //console.log(notMoved);
+      
      
         if (moved) {
-            this.nextTile();
-            this.toString();
+            if(localStorage.getItem("sound-on") === "on"){
+                //soundManager.play("tile_move"); 
+            }
+           this.nextTile();
         }
         this.checkWin(moved);
       
     };
+    
+    Grid.prototype.randomColor = function () {
+        return "#" + ((1 << 24) * Math.random() | 0).toString(16);
+    };
+
+    
+    function animateColor(state,self,row,col,color,translate){
+       self.runLater(50,function(){
+          if (state === "new") {
+            var colorTileId = "colortile-" + row + "-" + col;
+            var cellId = "cell-" +row + "-" + col;
+            var colorTile = $("<div class='colortile' style='line-height : " + self.cellWidth + "px;top:0px;left:0px;font-size:" + self.cellWidth /2.5 + "px ' id=" + colorTileId + " >");
+            colorTile.css("background",color);
+            if(self.grid[row][col]){
+               $("#"+cellId).html(colorTile); 
+            }
+            colorTile.addClass("tile-new");
+            var label = color.charAt(0).toUpperCase();
+            colorTile.html(label);
+            self.runLater(500, function () {
+                colorTile.removeClass("tile-new");
+                if (self.grid[row][col])
+                    self.grid[row][col].state = undefined;
+                });
+               return;
+            }
+          else if(state === "init"){
+             var cellId = "cell-" +row + "-" + col; 
+             $("#"+cellId).html("");
+         }
+       });
+      
+         
+        
+       if(translate){
+                //we translate the div from its original location, after translating it we destroy it in its original location
+                // and recreate it in the new location
+           var ctranslateRow = translate.current_row;
+           var ctranslateCol = translate.current_col;
+           var ptranslateRow = translate.previous_row;
+           var ptranslateCol = translate.previous_col;
+           var newCellId = "cell-" + ctranslateRow + "-" + ctranslateCol;
+           var colorTileId = "colortile-" + ptranslateRow + "-" + ptranslateCol;
+           var newColorTileId = "colortile-" + ctranslateRow + "-" + ctranslateCol;
+           var tileToTranslate = $("#"+colorTileId);
+           if(translate.dx){
+               var currentLeft = tileToTranslate[0].style.left;
+               currentLeft = parseFloat(currentLeft) + translate.dx;
+               tileToTranslate[0].style.left = currentLeft+"px";  
+           }
+           else {
+               var currentTop = tileToTranslate[0].style.top;
+               currentTop = parseFloat(currentTop) + translate.dy;
+               tileToTranslate[0].style.top = currentTop+"px";  
+           }
+            var tileMeta = self.grid[ctranslateRow][ctranslateCol].meta;
+            self.runLater(50,function(){
+                if(translate.dy === 0 || translate.dx === 0){
+                    //no motion
+                 }// for a tile merge, make the other tile transparent and show the new tile
+                 else {
+                     if (state === "merged") {
+                             var tileOne = $("#"+"colortile-"+tileMeta[0].row+"-"+tileMeta[0].col);
+                             var tileTwo = $("#"+"colortile-"+tileMeta[1].row+"-"+tileMeta[1].col);
+                             if(!self.grid[tileMeta[0].row][tileMeta[0].col]){
+                                 tileOne.css("background","transparent");
+                                 tileOne.html(""); // dont overwrite existing tiles
+                             }
+                             if(!self.grid[tileMeta[1].row][tileMeta[1].col]){
+                                 tileTwo.css("background","transparent");
+                                 tileTwo.html(""); //dont overwrite existing tiles
+                             }
+                              
+                             var newColorTile = $("<div class='colortile' style='line-height:"+self.cellWidth+"px;top:0px;left:0px;font-size:"+self.cellWidth/2.5+"px' id="+newColorTileId+" >");
+                             newColorTile.css("background",translate.value);
+                             newColorTile.addClass("tile-merged");
+                             newColorTile.html(translate.value.charAt(0).toUpperCase());
+                             $("#"+newCellId).html(newColorTile);
+                             self.runLater(500, function () {
+                                newColorTile.removeClass("tile-merged");
+                                if (self.grid[row][col])
+                                    self.grid[row][col].state = undefined;
+                            });
+                        }
+                        else { ////this is for normal translates
+                         var newColorTile = $("<div class='colortile' style='line-height:" + self.cellWidth + "px;top:0px;left:0px;font-size:" + self.cellWidth /2.5 + "px' id=" + newColorTileId + " >");
+                            var color = tileToTranslate[0].style.background; 
+                            newColorTile.css("background",color);
+                            newColorTile.html(tileToTranslate.html());
+                            //if(!self.grid[ptranslateRow][ptranslateCol]){
+                               tileToTranslate.css("background","transparent");
+                               tileToTranslate.html(""); //dont overwrite an existing tile
+                            //}
+                            
+                           // if(!self.grid[ctranslateRow][ctranslateCol]){
+                              $("#"+newCellId).html(newColorTile); // recreate the tile in the new location  
+                            //}
+                            
+                        }
+                   
+                    }
+               });
+            }
+      }
+           
+    
 
 
-    Grid.prototype.setColor = function (color, row, col, state) {
-        var id = "cell-" + row + "-" + col;
-        var label = color.charAt(0).toUpperCase();
-        var cell = document.getElementById(id);
-        cell.style.background = color;
-        window.requestAnimationFrame(function () {
-            if (state === "new") {
-                this.grid.addClass(cell, "tile-new");
-                this.grid.runLater(500, function () {
-                    window.grid.removeClass(cell, "tile-new");
-                    if (window.grid.grid[row][col])
-                        window.grid.grid[row][col].state = undefined;
-                });
-            }
-            else if (state === "merged") {
-                this.grid.addClass(cell, "tile-merged");
-                this.grid.runLater(500, function () {
-                    window.grid.removeClass(cell, "tile-merged");
-                    if (window.grid.grid[row][col])
-                        window.grid.grid[row][col].state = undefined;
-                });
-            }
-            else if (state === "motion") {
-                this.grid.addClass(cell, "motion");
-                this.grid.runLater(500, function () {
-                    window.grid.removeClass(cell, "motion");
-                    if (window.grid.grid[row][col])
-                        window.grid.grid[row][col].state = undefined;
-                });
-            }
-        });
-
-        if (label === "L") {
-            cell.innerHTML = "";
+    Grid.prototype.actuate = function (color, row, col, tileState,translate) {
+        var self = this;
+        if(window.requestAnimationFrame){
+            window.requestAnimationFrame(function(){
+               animateColor(tileState,self,row,col,color,translate); 
+            });
         }
-        else {
-            cell.innerHTML = label;
+        else{
+           animateColor(tileState,self,row,col,color,translate); 
         }
     };
 
     Grid.prototype.checkWin = function (moved) {
         var emptyTiles = [];
         var cyanTiles = [];
-       // var mergePossible = false;
+        var mergePossible = false;
         for (var x = 0; x < 4; x++) {
-            for (var y = 0; y < 4; y++) {
-            	/*
+            for (var y = 0; y < 4; y++) {	
                 var next = y === 3 ? 3 : y + 1;
-                if (this.grid[x][y] && this.grid[x][next]) {
+                if (this.grid[x][y] && this.grid[x][next] && y < 3) { //0 and 1, 1 and 2,2 and 3 
                     var color = this.addColors(this.grid[x][y].value, this.grid[x][next].value);
-                    
                     if( color ){
                         mergePossible = true;
                     }
                 }
 
-                if (this.grid[y][x] && this.grid[next][x]) {
+                if (this.grid[y][x] && this.grid[next][x] && y < 3) {
                     var color = this.addColors(this.grid[y][x].value, this.grid[next][x].value);
                     
                     if (color) {
                         mergePossible = true;
                     }
                 }
-            	*/
-
+            	
 
                 if (!this.grid[x][y]) {
                     var emptyTile = {};
@@ -337,29 +383,37 @@
                 }
             }
         }
-
+        this.cyanTiles = cyanTiles;
+        
         if (cyanTiles.length === 15) {
             this.showMessage("You Win!");
+            localStorage.setItem("the-grid",null);
             return;
         }
-        else if (emptyTiles.length === 1) {
-        	console.log("you lose");
+        else if (emptyTiles.length === 0 && mergePossible === false) {
             this.showMessage("Game Over!");
+            localStorage.setItem("the-grid",null);
             return;
         }
         if (moved) {
-            var score = (cyanTiles.length / 16) * 160;
-            var currentScore = document.getElementById("current-score").innerHTML;
-            var bestScore = document.getElementById("best-score").innerHTML;
-            currentScore = parseInt(currentScore) + parseInt(score);
-            document.getElementById("current-score").innerHTML = currentScore;
-            if (currentScore > bestScore) {
-                bestScore = parseInt(bestScore) + parseInt(score);
-                document.getElementById("best-score").innerHTML = bestScore;
-                document.getElementById("current-score").innerHTML = bestScore;
-            }
-            window.localStorage.setItem("best-score", bestScore);
+           var score = this.cyanTiles.length*this.cyanTiles.length;
+           this.addScore(score);
         }
+    };
+    
+    Grid.prototype.addScore = function(score){
+        var currentScore = $("#current-score").html();
+        var bestScore = $("#best-score").html();
+        currentScore = parseInt(currentScore) + parseInt(score);
+        $("#current-score").html(currentScore);
+        if (currentScore > bestScore) {
+            bestScore = parseInt(bestScore) + parseInt(score);
+            $("#best-score").html(bestScore);
+            $("#current-score").html(bestScore);
+        }
+        localStorage.setItem("best-score",bestScore);
+        localStorage.setItem("current-score",currentScore);
+        localStorage.setItem("the-grid",JSON.stringify(this.grid));
     };
 
     Grid.prototype.clone = function (arr) {
@@ -423,7 +477,7 @@
                 }
             }
         }
-
+         
         if (emptyTiles.length === 0) {
             return;
         }
@@ -432,8 +486,7 @@
         var col = emptyTiles[nextLocation].col;
         var tile = new Tile(nextValue, row, col, "new");
         this.grid[row][col] = tile;
-        this.setColor(tile.value, tile.row, tile.col, tile.state);
-        
+        this.actuate(tile.value, tile.row, tile.col, tile.state);
         return tile;
 
     };
@@ -442,22 +495,7 @@
         return setTimeout(func, limit);
     };
 
-    Grid.prototype.addClass = function (elem, clazz) {
-        var currentClasses = elem.getAttribute("class");
-        if (!currentClasses) {
-            currentClasses = "";
-        }
-        if (currentClasses.indexOf(clazz) === -1) {
-            currentClasses = currentClasses + " " + clazz;
-            elem.setAttribute("class", currentClasses);
-        }
-    };
-
-    Grid.prototype.removeClass = function (elem, clazz) {
-        var currentClasses = elem.getAttribute("class");
-        currentClasses = currentClasses.replace(clazz, "").trim();
-        elem.setAttribute("class", currentClasses);
-    };
+  
 
     Grid.prototype.toString = function () {
         for (var x = 0; x < 4; x++) {
@@ -502,60 +540,156 @@
         return [screenWidth, screenHeight];
     };
 
-    Grid.prototype.resize = function () {
-    	if(mobilecheck()){
-    		return;
-    	}
-        var maxHeight = window.screen.availHeight;
-        var maxWidth = window.screen.availWidth;
-        var currentHeight = window.grid.getDim()[1];
-        var currentWidth = window.grid.getDim()[0];
-        var grid = document.getElementById("grid");
-        var instr = document.getElementById("instr");
-        var scores = document.getElementById("scores");
-        var gameMessage = document.getElementById("message");
-        var coreInst = document.getElementById("core-instr");
-        var cells = document.getElementsByClassName("cell");
-        var gridTable = document.getElementById("grid-table");
-        var belowGrid = document.getElementById("below-grid");
-        var fontSize = (currentHeight/maxHeight)*40+"px";
-        var coreInstrFontSize = (currentHeight/maxHeight)*20+"px";
-    	var width = 0.36*currentWidth;
-        gridTable.style.height = width+"px";
-        gridTable.style.width = width+"px";
-        grid.style.width = width+"px";
-        instr.style.width = width+"px";
-        gameMessage.style.marginTop = 0.39*currentHeight+"px";
-        gameMessage.style.fontSize = fontSize;
-        var marginLeft = (currentWidth - 0.4*currentWidth) / 2;
-        
-        grid.style.marginLeft = marginLeft + "px";
-        instr.style.marginLeft = marginLeft + "px";
-        coreInst.style.marginLeft = marginLeft + "px";
-        coreInst.style.fontSize = coreInstrFontSize;
-        scores.style.marginLeft = marginLeft + "px";
-        belowGrid.style.marginLeft = marginLeft + "px";
-        belowGrid.style.fontSize = coreInstrFontSize;
-        var cellHeight = (width/4.5)+"px";
-        var borderSpacing = (currentHeight/maxHeight)*10+"px";
-        gridTable.style.borderSpacing = borderSpacing;
-        for (var x = 0; x < cells.length; x++) {
-            cells[x].style.height = cellHeight;
-            cells[x].style.width = cellHeight;
-            cells[x].style.fontSize = fontSize;
-        }    
-        
-    };
+ 
 
     Grid.prototype.showMessage = function (msg) {
-        document.getElementById("win-or-lose").innerHTML = msg;
-        var gmsg = document.getElementById("game-message");
-        this.addClass(gmsg, "message-anim");
-        gmsg.style.display = "block";
+        var height = this.getDim()[1];
+        var div = $("<div id='message' style='margin-top : "+0.3*height+"px;font-size : 20px;'></div>");
+        var span = $("<span id='win-or-lose' >"+msg+"</span><br><br>");
+        var href = $("<a href='#' id='message-link' onclick='restart()' class='message-link'>Play Again</a>");
+        
+        div.append(span);
+        div.append(href);
+        var gmsg = $("#game-message");
+        gmsg.css("background","rgba(255, 215, 0, 0.5)");
+        gmsg.html(div);
+        
+        gmsg.addClass("message-anim");
+        window.grid.motion = false;
+        gmsg.css("display","block");
         this.runLater(1000, function () {
-            window.grid.removeClass(gmsg, "message-anim");
+            gmsg.removeClass("message-anim");
         });
-    }
+		
+    };
+	
+    Grid.prototype.menuBuilder = function (menu, autoSaveFunc) {
+        var selectIds = [];
+        var menuArea = $("#game-message");
+        menuArea.css("background","rgba(255, 215, 0, 0.5)");
+        menuArea.html("");
+        var table = $("<table  style='margin-top:20px;font-family:arial;font-size:14px;border-spacing:20px'>");
+        var width = this.getDim()[0];
+        for(var x = 0; x < menu.length; x++){
+            var subMenu = menu[x];
+            var options = subMenu.options;
+	        var label = subMenu.label;
+	        var preset = subMenu.preset;
+	        var tr = $("<tr>");
+	        var td1 = $("<td style='margin-right : 20px; padding : 5px; background:lightblue;color:black;border-radius:5px;font-size:14px'>" + label + "</td>");
+	        var td2 = $("<td>");
+	        var selectId = "select_" + Math.floor(Math.random() * 10000000);
+	        selectIds.push(selectId);
+	        var select = $("<select id=" + selectId + " style='font-size:14px'>");
+	        for (var y = 0; y < options.length; y++) {
+	            var option = $("<option value=" + options[y] + ">" + options[y] + "</option>");
+	            select.append(option);
+	        }
+	        select.val(preset);
+	        td2.html(select);
+	        tr.append(td1);
+	        tr.append(td2);
+	        table.append(tr);
+            
+	 }
+
+	    var buttonDiv = $("<div style='margin-top : 20px'>");
+	    var ok = $("<input type='button' class='btn btn-primary' value='OK' style='width : " + 0.8 * width + "px;font-size:20px'>");
+	    ok.attr("onclick", autoSaveFunc + "(" + JSON.stringify(selectIds) + ")");
+	    buttonDiv.append(ok);
+	    menuArea.append(table);
+	    menuArea.append(buttonDiv);
+	    menuArea.addClass("message-anim");
+	    menuArea.css("display", "block");
+	    this.runLater(1000, function () {
+	        menuArea.removeClass("message-anim");
+	    });
+            
+	};
+	
+        
+        Grid.prototype.confirm = function(msg,callback){
+            var height = this.getDim()[1];
+            var div = $("<div id='message' style='margin-top : "+0.3*height+"px;'></div>");
+            var span = $("<span id='win-or-lose' style='font-size : 20px'>" + msg + "</span><br><br>");
+            var href = $("<a href='#' class='message-link' style='font-size : 20px'>Yes</a>");
+            href[0].addEventListener("click",callback,false);
+            var href1 = $("<a href='#' class='message-link' style='margin-left:50px;font-size : 20px;'>No</a>");
+            href1.attr("onclick","$('#game-message').css('display','none')");
+            div.append(span);
+            div.append(href);
+            div.append(href1);
+            var gmsg = $("#game-message");
+            gmsg.css("background","rgba(255, 215, 0, 0.5)");
+            gmsg.html(div);
+            gmsg.addClass("message-anim");
+            gmsg.css("display","block");
+            this.runLater(1000, function () {
+                gmsg.removeClass("message-anim");
+            });
+        };
+        
+       Grid.prototype.showHelp = function(){
+         var width = this.getDim()[0];
+         var height = this.getDim()[1];
+         var area = $("#game-message");  
+         area.css("background","white");
+         area.html("");
+         var help1 = $("<p style='margin:20px;font-size:16px'>The goal of the game is to fill the grid with 15 cyan colored tiles</p>");
+         var help1Image = $("<img src='img/win.png' width="+0.8*width+">");
+         var help2 = $("<p style='margin:20px;font-size:16px'>Primary colors(Red, Green and Blue) combine to form secondary colors(Yellow, Cyan and Magenta)</p>");
+         var help2Image = $("<img src='img/combine1.png' width="+width+" height="+0.8*height+">");
+         var help2P =$("<p>Secondary colors combine to give the original primary colors. Cyan colored tiles do not combine</p>");
+         var help2PImage = $("<img src='img/combine2.png' width="+width+" height="+0.8*height+">");
+         var help3 = $("<p style='margin:20px;font-size:16px'>If you fill the grid with 16 tiles and there are no more possible moves, the game ends</p>");
+         var help3Image = $("<img src='img/lose.png' width="+0.8*width+">");
+         var help4 = $("<p style='margin:20px;font-size:16px'>Swipe left,right, up and down to navigate through the grid</p>");
+         area.append(help1);
+         area.append(help1Image);
+         area.append(help2);
+         area.append(help2Image);
+         area.append(help2P);
+         area.append(help2PImage);
+         area.append(help3);
+         area.append(help3Image);
+         area.append(help4);
+         var buttonDiv = $("<div style='margin-top : 20px'>");
+         var ok = $("<input type='button' class='btn btn-primary' value='Back to Game' style='width : "+0.8*width+"px; margin-bottom:20px'>");
+         ok.attr("onclick","$('#game-message').css('display','none')");
+         buttonDiv.append(ok);
+         area.append(buttonDiv);
+         area.addClass("message-anim");
+         area.css("display","block");
+         this.runLater(1000, function () {
+             area.removeClass("message-anim");
+         });
+       };
+       
+       Grid.prototype.showAbout = function(){
+         var width = this.getDim()[0];
+         var area = $("#game-message");  
+         area.css("background","white");
+         area.html("");  
+         var about1 = $("<p style='margin:20px;'>RGB All Cyan is brought to you by Quest LTD, Nairobi, Kenya</p>");
+         var about2 = $("<p style='margin:20px;'>This game is inpired by Gabriele Cirulli's 2048 and uses sounds from freesounds.org</p>");
+         var about1Image = $("<img src='img/logo.png' width="+0.6*width+"px' style='border-radius:10px;'>");
+         area.append(about1);
+         area.append(about2);
+         area.append(about1Image);
+         var buttonDiv = $("<div style='margin-top : 20px'>");
+         var ok = $("<input type='button' class='btn btn-primary' value='Back to Game' style='width : "+0.8*width+"px'>");
+         ok.attr("onclick","$('#game-message').css('display','none')");
+         buttonDiv.append(ok);
+         area.append(buttonDiv);
+         area.addClass("message-anim");
+         area.css("display","block");
+         this.runLater(1000, function () {
+             area.removeClass("message-anim");
+         });
+       };
+
+	
+	
 
     Grid.prototype.cyanTest = function () {
         var time = setInterval(function () {
@@ -569,8 +703,6 @@
         }, 400);
     };
     
-  function mobilecheck() {
-   	 var check = false;
-   	 (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4)))check = true})(navigator.userAgent||navigator.vendor||window.opera);
-   	 return check;
-  }
+	
+
+
