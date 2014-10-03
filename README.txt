@@ -1,6 +1,6 @@
 This is a color combining game similar to the popular 2048
 the goal of the game is to fill the grid with 15 cyan tiles.
-If the grid is filled with 16 non cyan tiles despite there being
+If the grid is filled with 15 non cyan tiles despite there being
 possible moves, the game ends.
 
 The colors combine in this fashion
