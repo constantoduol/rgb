@@ -27,9 +27,9 @@
 		var footer = $("#footer");
 		var width = this.getDim()[0];
 		var margin = (width - 600)/2;
-		grid.setAttribute("style","margin-left:"+margin+"px");
-		footer.css("margin-left", margin+"px");
-		scores.setAttribute("style","margin-left:"+margin+"px;margin-top:20px;")
+		//grid.setAttribute("style","margin-left:"+margin+"px");
+		//footer.css("margin-left", margin+"px");
+		//scores.setAttribute("style","margin-left:"+margin+"px;margin-top:20px;")
         window.grid.motion = true;
         grid.innerHTML = "";
         var table = document.createElement("table");
