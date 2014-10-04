@@ -2,7 +2,7 @@
                    body {
                        font-family: arial;
                        background: #F0FFFF;
-                       
+                       padding : 10px;
                     }
                     #grid {
                        border : 5px solid gray;
@@ -27,6 +27,7 @@
                        font-weight: bold;
 					   width : 62.5px;
                        height : 62.5px;
+					   line-height : 62.5px;
                     }
                     
                     table {

@@ -38,7 +38,6 @@
                 var cell = document.createElement("td");
                 cell.setAttribute("class", "cell");
                 cell.setAttribute("id", cellId);
-                //cell.setAttribute("style", "width : " + this.cellWidth + "px;height : "+this.cellWidth+"px;");
                 row.appendChild(cell);
             }
             table.appendChild(row);
