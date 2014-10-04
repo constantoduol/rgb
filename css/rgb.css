@@ -2,8 +2,7 @@
                    body {
                        font-family: arial;
                        background: #F0FFFF;
-                       overflow : hidden;
-                       padding : 10px;
+                       
                     }
                     #grid {
                        border : 5px solid gray;

@@ -23,18 +23,12 @@
 
      Grid.prototype.init = function () {
         var grid = document.getElementById("grid");
-		var scores = document.getElementById("scores");
-		var footer = $("#footer");
-		//var width = this.getDim()[0];
-		//var margin = (width - 600)/2;
-		//grid.setAttribute("style","margin-left:"+margin+"px");
-		//footer.css("margin-left", margin+"px");
-		//scores.setAttribute("style","margin-left:"+margin+"px;margin-top:20px;")
         window.grid.motion = true;
         grid.innerHTML = "";
         var table = document.createElement("table");
         table.setAttribute("id","grid-table");
-        table.setAttribute("style","background : rgba(169, 169, 169, 0.6);");
+		table.setAttribute("class","table");
+        table.setAttribute("style","background : rgba(169, 169, 169, 0.6);margin-bottom:0px");
         for (var x = 0; x < 4; x++) {
             var rowId = "row-" + x;
             var row = document.createElement("tr");
