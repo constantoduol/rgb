@@ -6,7 +6,12 @@
         this.nextList = ["red", "green", "blue"];
         this.direction = { up: 1, down: 2, right: 3, left: 4 }; // 1 = up, 2 = down, 3 = left to right, 4 = right to left
         var width = this.getDim()[0];
-        this.cellWidth = (600)/6; // border-spacing = 8px * 4, grid border = 5px * 2, body padding = 10px *2 = 70px
+		if(mobilecheck()){
+			this.cellWidth = 62.5 // border-spacing = 8px * 4, grid border = 5px * 2, body padding = 10px *2 = 70px
+		}
+		else {
+			this.cellWidth = width/4.5; // border-spacing = 8px * 4, grid border = 5px * 2, body padding = 10px *2 = 70px
+		}
         this.cyanTiles = [];
         this.previousTilesLength = 0;
     }
@@ -83,6 +88,7 @@
         var cellHeight = (width/4.5)+"px";
         var borderSpacing = (currentHeight/maxHeight)*10+"px";
         gridTable.style.borderSpacing = borderSpacing;
+		this.cellWidth = width/4.5;
         for (var x = 0; x < cells.length; x++) {
             cells[x].style.height = cellHeight;
             cells[x].style.width = cellHeight;

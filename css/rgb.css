@@ -39,6 +39,7 @@
                         position : relative;
                         border-radius: 3px;
                         height : 100%;
+						line-height : 62.5px;
                         z-index : 2;
                         -webkit-transition: 100ms ease-in-out;
                         -moz-transition: 100ms ease-in-out;
